@@ -13,5 +13,7 @@ class AbsensiController extends Controller
     {}
 
     public function dashboard()
-    {}
+    {
+        return view('pages.dashboard');
+    }
 }
