@@ -100,7 +100,11 @@ class KaryawanController extends Controller
      */
     public function edit(string $id)
     {
-        //
+        $karyawan = Karyawan::find($id);
+        if(!$karyawan->exists()) {
+            return redirect()->route('karyawan_list');
+        }
+        return view('pages.karyawan-edit', compact('karyawan'));
     }
 
     /**
@@ -108,7 +112,33 @@ class KaryawanController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        //
+        $request->validate([
+            'nama' => 'required|max:255',
+            'email' => 'required|email:rfc,dns|max:255',
+            'password' => 'nullable|min:8|max:255',
+            'role' => 'required|in:admin,karyawan',
+            'foto_profil' => 'image|mimes:png,jpg,jpeg'
+        ]);
+
+        $same_email = Karyawan::where('email', $request->email)->whereNot('id', $id)->exists();
+        if($same_email) return redirect()->back()->withInput()->withErrors(['email' => 'Email already registered!']);
+
+        $data = $request->only('nama', 'email', 'role');
+        if($request->has('password')) {
+            $data['password'] = Hash::make($request->password);
+        }
+        if($request->foto_profil) {
+            $file = $request->file('foto_profil');
+            $file_path = $file->store('foto_profil', 'public');
+            if(!$file_path) return redirect()->back()->withInput()->withErrors(['foto_profil' => 'Foto profil failed to upload!']);
+            $data['foto_profil'] = $file_path;
+        }
+
+        $update = Karyawan::find($id)->update($data);
+        if($update) {
+            return redirect()->route('karyawan_list');
+        }
+        return redirect()->back()->withInput()->withErrors(['nama' => 'Failed to update karyawan!']);
     }
 
     /**
@@ -116,6 +146,11 @@ class KaryawanController extends Controller
      */
     public function destroy(string $id)
     {
-        //
+        $karyawan = Karyawan::find($id);
+        if(!$karyawan->exists()) {
+            return redirect()->route('karyawan_list');
+        }
+        $karyawan->delete();
+        return redirect()->route('karyawan_list');
     }
 }
